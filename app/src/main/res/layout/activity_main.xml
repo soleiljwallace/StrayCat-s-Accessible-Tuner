@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityHeading="true"
+        android:text="@string/app_name"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <!-- Live region: TalkBack speaks this whenever its text changes.
+         "assertive" interrupts older speech so you always hear the newest reading.
+         Change to "polite" if you'd rather it wait. -->
+    <TextView
+        android:id="@+id/readout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:accessibilityLiveRegion="assertive"
+        android:text="@string/idle"
+        android:textSize="40sp" />
+
+    <Button
+        android:id="@+id/toggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:minHeight="96dp"
+        android:text="@string/start"
+        android:textSize="24sp" />
+
+    <Switch
+        android:id="@+id/headphones"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:minHeight="64dp"
+        android:text="@string/headphones"
+        android:textSize="20sp" />
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Accessible Tuner</string>
+    <string name="idle">Not listening</string>
+    <string name="start">Start tuning</string>
+    <string name="stop">Stop tuning</string>
+    <string name="listening">Listening</string>
+    <string name="stopped">Stopped</string>
+    <string name="headphones">Headphones mode: keep listening while speaking</string>
+    <string name="mic_error">Could not open the microphone</string>
+    <string name="mic_needed">Microphone permission is needed to tune</string>
+</resources>
