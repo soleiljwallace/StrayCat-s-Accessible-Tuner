@@ -18,6 +18,7 @@ class MainActivity : Activity() {
     private lateinit var readout: TextView
     private lateinit var toggle: Button
     private lateinit var headphones: Switch
+    private lateinit var direct: Switch
     private lateinit var announcer: Announcer
 
     private val handler = Handler(Looper.getMainLooper())
@@ -36,7 +37,19 @@ class MainActivity : Activity() {
         readout = findViewById(R.id.readout)
         toggle = findViewById(R.id.toggle)
         headphones = findViewById(R.id.headphones)
+        direct = findViewById(R.id.direct)
         announcer = Announcer(this, readout)
+
+        // Remember both switches between launches
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        headphones.isChecked = prefs.getBoolean("headphones", false)
+        direct.isChecked = prefs.getBoolean("direct", false)
+        announcer.directAnnouncements = direct.isChecked
+        headphones.setOnCheckedChangeListener { _, on -> prefs.edit().putBoolean("headphones", on).apply() }
+        direct.setOnCheckedChangeListener { _, on ->
+            prefs.edit().putBoolean("direct", on).apply()
+            announcer.directAnnouncements = on
+        }
 
         toggle.setOnClickListener {
             if (detector == null) startTuning() else stopTuning(announce = true)
@@ -48,7 +61,7 @@ class MainActivity : Activity() {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC)
             return
         }
-        val d = PitchDetector { hz -> handler.post { onPitch(hz) } }
+        val d = PitchDetector(this) { hz -> handler.post { onPitch(hz) } }
         if (!d.start()) {
             announcer.announce(getString(R.string.mic_error))
             return

@@ -42,4 +42,13 @@
         android:minHeight="64dp"
         android:text="@string/headphones"
         android:textSize="20sp" />
+
+    <Switch
+        android:id="@+id/direct"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:minHeight="64dp"
+        android:text="@string/direct"
+        android:textSize="20sp" />
 </LinearLayout>

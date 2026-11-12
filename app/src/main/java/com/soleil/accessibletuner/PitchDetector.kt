@@ -1,7 +1,10 @@
 package com.soleil.accessibletuner
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Process
@@ -11,7 +14,7 @@ import kotlin.math.max
  * Reads the microphone on a background thread and reports a frequency (Hz, or -1 for no pitch)
  * roughly 20 times per second. The callback runs on the audio thread.
  */
-class PitchDetector(private val onPitch: (Float) -> Unit) {
+class PitchDetector(private val context: Context, private val onPitch: (Float) -> Unit) {
     private val sampleRate = 44100
     private val bufferSize = 4096   // analysis window (~93 ms)
     private val hop = 2048          // new samples per analysis (~46 ms)
@@ -44,6 +47,12 @@ class PitchDetector(private val onPitch: (Float) -> Unit) {
             record.release()
             return false
         }
+
+        // Always use the phone's own microphone, even when a wired or Bluetooth headset is connected.
+        val audioManager = context.getSystemService(AudioManager::class.java)
+        audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
+            .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+            ?.let { record.setPreferredDevice(it) }
 
         running = true
         thread = Thread({

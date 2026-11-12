@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.TextView
 import java.util.Locale
@@ -50,12 +51,39 @@ class Announcer(context: Context, private val liveRegion: TextView) {
     /** True when TalkBack (or another touch-exploration screen reader) is on. */
     fun screenReaderOn(): Boolean = a11y.isEnabled && a11y.isTouchExplorationEnabled
 
+    /**
+     * false (default): clear the readout, then redraw it a moment later, so TalkBack sees a fresh
+     *   live-region change every time.
+     * true: send the reading straight to TalkBack as an announcement, with the live region turned off.
+     */
+    var directAnnouncements = false
+        set(value) {
+            field = value
+            liveRegion.accessibilityLiveRegion =
+                if (value) View.ACCESSIBILITY_LIVE_REGION_NONE else View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE
+        }
+
+    private var pendingRedraw: Runnable? = null
+
     fun announce(text: String) {
         val now = SystemClock.elapsedRealtime()
         if (screenReaderOn()) {
             tts?.stop()
-            liveRegion.text = text   // TalkBack announces live-region changes
-            speakingUntil = now + estimateSpeechMs(text)
+            pendingRedraw?.let { liveRegion.removeCallbacks(it) }
+            if (directAnnouncements) {
+                liveRegion.text = text
+                @Suppress("DEPRECATION")
+                liveRegion.announceForAccessibility(text)
+                speakingUntil = now + estimateSpeechMs(text)
+            } else {
+                // Android merges accessibility events on the same view that arrive within ~100 ms,
+                // so wait longer than that before drawing the new reading.
+                liveRegion.text = ""
+                val redraw = Runnable { liveRegion.text = text }
+                pendingRedraw = redraw
+                liveRegion.postDelayed(redraw, REDRAW_DELAY_MS)
+                speakingUntil = now + REDRAW_DELAY_MS + estimateSpeechMs(text)
+            }
         } else {
             liveRegion.text = text
             if (ttsReady) {
@@ -78,5 +106,6 @@ class Announcer(context: Context, private val liveRegion: TextView) {
     companion object {
         const val MS_PER_CHAR = 45L
         const val AFTER_SPEECH_MS = 200L
+        const val REDRAW_DELAY_MS = 150L
     }
 }
