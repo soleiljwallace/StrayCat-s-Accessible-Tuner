@@ -6,6 +6,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.view.View
 import android.view.accessibility.AccessibilityManager
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.TextView
 import java.util.Locale
 
@@ -54,9 +55,11 @@ class Announcer(context: Context, private val liveRegion: TextView) {
     /**
      * false (default): clear the readout, then redraw it a moment later, so TalkBack sees a fresh
      *   live-region change every time.
-     * true: send the reading straight to TalkBack as an announcement, with the live region turned off.
+     * true: move TalkBack focus onto the reading every time it is redrawn (focus is cleared first,
+     *   so TalkBack reads it again even if it was already there). The live region is turned off
+     *   so the reading isn't spoken twice.
      */
-    var directAnnouncements = false
+    var focusMode = false
         set(value) {
             field = value
             liveRegion.accessibilityLiveRegion =
@@ -70,20 +73,25 @@ class Announcer(context: Context, private val liveRegion: TextView) {
         if (screenReaderOn()) {
             tts?.stop()
             pendingRedraw?.let { liveRegion.removeCallbacks(it) }
-            if (directAnnouncements) {
-                liveRegion.text = text
-                @Suppress("DEPRECATION")
-                liveRegion.announceForAccessibility(text)
-                speakingUntil = now + estimateSpeechMs(text)
-            } else {
-                // Android merges accessibility events on the same view that arrive within ~100 ms,
-                // so wait longer than that before drawing the new reading.
-                liveRegion.text = ""
-                val redraw = Runnable { liveRegion.text = text }
-                pendingRedraw = redraw
-                liveRegion.postDelayed(redraw, REDRAW_DELAY_MS)
-                speakingUntil = now + REDRAW_DELAY_MS + estimateSpeechMs(text)
+            if (focusMode) {
+                liveRegion.performAccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS, null
+                )
             }
+            // Android merges accessibility events on the same view that arrive within ~100 ms,
+            // so wait longer than that before drawing the new reading.
+            liveRegion.text = ""
+            val redraw = Runnable {
+                liveRegion.text = text
+                if (focusMode) {
+                    liveRegion.performAccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null
+                    )
+                }
+            }
+            pendingRedraw = redraw
+            liveRegion.postDelayed(redraw, REDRAW_DELAY_MS)
+            speakingUntil = now + REDRAW_DELAY_MS + estimateSpeechMs(text)
         } else {
             liveRegion.text = text
             if (ttsReady) {

@@ -7,7 +7,7 @@
     <string name="listening">Listening</string>
     <string name="stopped">Stopped</string>
     <string name="headphones">Headphones mode: keep listening while speaking</string>
-    <string name="direct">Alternate TalkBack announcements: try this if readings stop updating</string>
+    <string name="direct">Move TalkBack focus to each new reading</string>
     <string name="mic_error">Could not open the microphone</string>
     <string name="mic_needed">Microphone permission is needed to tune</string>
 </resources>

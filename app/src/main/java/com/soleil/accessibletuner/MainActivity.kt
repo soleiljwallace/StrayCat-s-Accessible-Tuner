@@ -44,11 +44,11 @@ class MainActivity : Activity() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         headphones.isChecked = prefs.getBoolean("headphones", false)
         direct.isChecked = prefs.getBoolean("direct", false)
-        announcer.directAnnouncements = direct.isChecked
+        announcer.focusMode = direct.isChecked
         headphones.setOnCheckedChangeListener { _, on -> prefs.edit().putBoolean("headphones", on).apply() }
         direct.setOnCheckedChangeListener { _, on ->
             prefs.edit().putBoolean("direct", on).apply()
-            announcer.directAnnouncements = on
+            announcer.focusMode = on
         }
 
         toggle.setOnClickListener {

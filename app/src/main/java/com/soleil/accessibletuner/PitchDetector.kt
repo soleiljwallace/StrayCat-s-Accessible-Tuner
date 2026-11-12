@@ -30,26 +30,38 @@ class PitchDetector(private val context: Context, private val onPitch: (Float) -
         )
         if (minBuf <= 0) return false
 
-        // VOICE_RECOGNITION turns off automatic gain control and noise suppression on most phones,
-        // which is what a tuner wants.
-        val record = try {
-            AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                sampleRate,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                max(minBuf, bufferSize * 2 * 2)
-            )
-        } catch (e: Exception) {
-            return false
+        // Don't use VOICE_RECOGNITION: TalkBack goes quiet (no live-region or announcement speech)
+        // while a voice-recognition recording is active. UNPROCESSED is raw audio, ideal for tuning,
+        // but not every phone supports it, so fall back to the ordinary MIC source.
+        val audioManager = context.getSystemService(AudioManager::class.java)
+        val sources = buildList {
+            if (audioManager.getProperty(AudioManager.PROPERTY_SUPPORT_AUDIO_SOURCE_UNPROCESSED) == "true") {
+                add(MediaRecorder.AudioSource.UNPROCESSED)
+            }
+            add(MediaRecorder.AudioSource.MIC)
         }
-        if (record.state != AudioRecord.STATE_INITIALIZED) {
-            record.release()
-            return false
+        var record: AudioRecord? = null
+        for (source in sources) {
+            val candidate = try {
+                AudioRecord(
+                    source,
+                    sampleRate,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    max(minBuf, bufferSize * 2 * 2)
+                )
+            } catch (e: Exception) {
+                null
+            }
+            if (candidate?.state == AudioRecord.STATE_INITIALIZED) {
+                record = candidate
+                break
+            }
+            candidate?.release()
         }
+        if (record == null) return false
 
         // Always use the phone's own microphone, even when a wired or Bluetooth headset is connected.
-        val audioManager = context.getSystemService(AudioManager::class.java)
         audioManager.getDevices(AudioManager.GET_DEVICES_INPUTS)
             .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
             ?.let { record.setPreferredDevice(it) }
